@@ -1,0 +1,42 @@
+{
+  "name": "react-leaflet-lat-lng-graticule",
+  "version": "0.0.1",
+  "description": "A React-based Lat/Lng graticule for Leaflet using Canvas",
+  "main": "./src/LatLngGraticule.ts",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dnlbaldwin/React-Leaflet-Lat-Lng-Graticule.git"
+  },
+  "keywords": [
+    "Lat/Lng",
+    "Leaflet",
+    "React"
+  ],
+  "author": "Dan Baldwin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dnlbaldwin/React-Leaflet-Lat-Lng-Graticule/issues"
+  },
+  "homepage": "https://github.com/dnlbaldwin/React-Leaflet-Lat-Lng-Graticule#readme",
+  "dependencies": {
+    "@types/leaflet": "^1.7.4",
+    "leaflet": "^1.7.1",
+    "tslint": "^6.1.3",
+    "typescript": "^4.3.5"
+  },
+  "peerDependencies": {
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-leaflet": "^3.1.0"
+  },
+  "devDependencies": {
+    "react-leaflet": "^3.2.0"
+  }
+}
