@@ -26,17 +26,23 @@
   },
   "homepage": "https://github.com/dnlbaldwin/React-Leaflet-Lat-Lng-Graticule#readme",
   "dependencies": {
-    "@types/leaflet": "^1.7.4",
     "leaflet": "^1.7.1",
     "tslint": "^6.1.3",
     "typescript": "^4.3.5"
   },
   "peerDependencies": {
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "react-leaflet": "^3.1.0"
   },
   "devDependencies": {
-    "react-leaflet": "^3.2.0"
+    "@types/leaflet": "^1.7.4",
+    "@types/react": "^17.0.14",
+    "babel-loader": "8.1.0",
+    "react": "^17.0.2",
+    "react-dev": "0.0.1",
+    "react-dom": "^17.0.2",
+    "react-leaflet": "^3.2.0",
+    "webpack": "4.44.2"
   }
 }
