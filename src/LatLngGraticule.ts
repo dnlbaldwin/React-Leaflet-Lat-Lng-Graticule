@@ -3,39 +3,160 @@ import { useEffect, useState } from 'react';
 import { useMapEvents } from 'react-leaflet';
 
 const defaultLatLngInterval = [
-  { zoom: 0, interval: 20 },
-  { zoom: 1, interval: 20 },
-  { zoom: 2, interval: 20 },
-  { zoom: 3, interval: 20 },
-  { zoom: 4, interval: 10 },
-  { zoom: 5, interval: 10 },
-  { zoom: 6, interval: 10 },
-  { zoom: 7, interval: 10 },
-  { zoom: 8, interval: 5 },
-  { zoom: 9, interval: 5 },
-  { zoom: 10, interval: 5 },
-  { zoom: 11, interval: 5 },
-  { zoom: 12, interval: 2.5 },
-  { zoom: 13, interval: 2.5 },
-  { zoom: 14, interval: 2.5 },
-  { zoom: 15, interval: 2.5 },
-  { zoom: 16, interval: 1 },
-  { zoom: 17, interval: 1 },
-  { zoom: 18, interval: 1 },
+  20, //0
+  20, //1
+  20, //2
+  20, //3
+  10, //4
+  10, //5
+  5, //6
+  5, //7
+  1, //8
+  1, //9
+  0.25, //10
+  0.25, //11
+  0.1, //12
+  0.05, //13
+  0.05, //14
+  0.05, //15
+  0.025, //16
+  0.025, //17
+  0.025, //18
 ];
 
-const drawGraticule = (map: Map, canvas: HTMLCanvasElement) => {
+interface Style {
+  lineWeight: number;
+  outLineWeight: number;
+  lineColour: string;
+  outlineColour: string;
+  fontType: string;
+}
+
+const drawGraticule = (map: Map, canvas: HTMLCanvasElement, style: Style) => {
   // Determine lat/lng interval
-  const currentLatLngInterval = map.getZoom();
+  // TODO Set default value if index not found
+
+  const currentLatLngInterval = defaultLatLngInterval[Math.round(map.getZoom())];
+
+  let ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    return;
+  }
+
+  const leftTopLl: LatLng = map.containerPointToLatLng(<Point>{
+    x: 0,
+    y: 0,
+  });
+
+  const rightBottomLl: LatLng = map.containerPointToLatLng(<Point>{
+    x: canvas.width,
+    y: canvas.height,
+  });
+
+  const baseStartingLatitude: number = Math.floor(rightBottomLl.lat / currentLatLngInterval) * currentLatLngInterval;
+
+  const baseStartingLongitude: number = Math.floor(leftTopLl.lng / currentLatLngInterval) * currentLatLngInterval;
+
+  for (let i = baseStartingLatitude; i <= leftTopLl.lat; i += currentLatLngInterval) {
+    const westEnd = map.latLngToContainerPoint({
+      lat: i,
+      lng: leftTopLl.lng,
+    });
+
+    const eastEnd = map.latLngToContainerPoint({
+      lat: i,
+      lng: rightBottomLl.lng,
+    });
+
+    ctx.lineWidth = style.outLineWeight;
+    ctx.strokeStyle = style.outlineColour;
+    ctx.fillStyle = style.outlineColour;
+
+    ctx.beginPath();
+    ctx.moveTo(westEnd.x, westEnd.y);
+    ctx.lineTo(eastEnd.x, eastEnd.y);
+    ctx.stroke();
+
+    ctx.lineWidth = style.lineWeight;
+    ctx.strokeStyle = style.lineColour;
+    ctx.fillStyle = style.lineColour;
+
+    ctx.stroke();
+
+    // Draw the labels
+
+    const labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
+      .toFixed(3)
+      .toString()
+      .replace(/(\.0+|0+)$/, '');
+    const textWidth = ctx.measureText(labelText).width;
+    const textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
+
+    ctx.fillStyle = style.lineColour;
+
+    ctx.fillRect(westEnd.x + textWidth / 2 + 1, westEnd.y - textHeight, textWidth + 3, textHeight + 6);
+
+    ctx.fillStyle = style.outlineColour;
+    ctx.font = style.fontType;
+
+    ctx.fillText(labelText, westEnd.x + textWidth / 2 + 2, westEnd.y + 3);
+  }
+
+  for (let i = baseStartingLongitude; i <= rightBottomLl.lng; i += currentLatLngInterval) {
+    const northEnd = map.latLngToContainerPoint({
+      lat: leftTopLl.lat,
+      lng: i,
+    });
+    const southEnd = map.latLngToContainerPoint({
+      lat: rightBottomLl.lat,
+      lng: i,
+    });
+
+    ctx.lineWidth = style.outLineWeight;
+    ctx.strokeStyle = style.outlineColour;
+    ctx.fillStyle = style.outlineColour;
+
+    ctx.beginPath();
+    ctx.moveTo(northEnd.x, northEnd.y);
+    ctx.lineTo(southEnd.x, southEnd.y);
+    ctx.stroke();
+
+    ctx.lineWidth = style.lineWeight;
+    ctx.strokeStyle = style.lineColour;
+    ctx.fillStyle = style.lineColour;
+
+    ctx.stroke();
+
+    // Draw the labels
+
+    const labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
+      .toFixed(3)
+      .toString()
+      .replace(/(\.0+|0+)$/, '');
+    const textWidth = ctx.measureText(labelText).width;
+    const textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
+
+    ctx.fillStyle = style.lineColour;
+
+    ctx.fillRect(southEnd.x - textWidth / 2 - 1, southEnd.y - textHeight - 9, textWidth + 3, textHeight + 6);
+
+    ctx.fillStyle = style.outlineColour;
+    ctx.font = style.fontType;
+
+    ctx.fillText(labelText, southEnd.x - textWidth / 2, southEnd.y - 6);
+  }
 };
 
 //TODO - Add line props, zoom interval props
 const LatLngGraticule = (props: any) => {
   // Line/label properties
-  const dash = [2, 2];
-  const fontColour = '#aaa';
-  const fontBackground = '#fff';
-  const lineWeight = 1;
+  const fontColour = '#000';
+  const fontBackground = '#FFF';
+  const lineColor = '#000';
+  const lineOutlineColor = '#FFF';
+  const lineWeight = 2;
+  const lineOutlineWeight = 3;
   const showLabel = true;
 
   let canvas: HTMLCanvasElement = document.createElement('canvas');
@@ -62,7 +183,6 @@ const LatLngGraticule = (props: any) => {
 
   // Add the canvas only if it hasn't already been added
   if (!map.getPanes().overlayPane.classList.contains(name)) {
-    console.log(map.getPanes().overlayPane.classList);
     map.getPanes().overlayPane.appendChild(canvas);
   }
   // Initial draw if required
@@ -81,7 +201,13 @@ const LatLngGraticule = (props: any) => {
 
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGraticule(map, canvas);
+      drawGraticule(map, canvas, {
+        lineWeight: lineWeight,
+        outLineWeight: lineOutlineWeight,
+        lineColour: lineColor,
+        outlineColour: lineOutlineColor,
+        fontType: '16px Courier New',
+      });
     }
   }
 

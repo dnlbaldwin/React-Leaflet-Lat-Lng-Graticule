@@ -1,37 +1,120 @@
 import { useEffect, useState } from 'react';
 import { useMapEvents } from 'react-leaflet';
 var defaultLatLngInterval = [
-    { zoom: 0, interval: 20 },
-    { zoom: 1, interval: 20 },
-    { zoom: 2, interval: 20 },
-    { zoom: 3, interval: 20 },
-    { zoom: 4, interval: 10 },
-    { zoom: 5, interval: 10 },
-    { zoom: 6, interval: 10 },
-    { zoom: 7, interval: 10 },
-    { zoom: 8, interval: 5 },
-    { zoom: 9, interval: 5 },
-    { zoom: 10, interval: 5 },
-    { zoom: 11, interval: 5 },
-    { zoom: 12, interval: 2.5 },
-    { zoom: 13, interval: 2.5 },
-    { zoom: 14, interval: 2.5 },
-    { zoom: 15, interval: 2.5 },
-    { zoom: 16, interval: 1 },
-    { zoom: 17, interval: 1 },
-    { zoom: 18, interval: 1 },
+    20,
+    20,
+    20,
+    20,
+    10,
+    10,
+    5,
+    5,
+    1,
+    1,
+    0.25,
+    0.25,
+    0.1,
+    0.05,
+    0.05,
+    0.05,
+    0.025,
+    0.025,
+    0.025,
 ];
-var drawGraticule = function (map, canvas) {
+var drawGraticule = function (map, canvas, style) {
     // Determine lat/lng interval
-    var currentLatLngInterval = map.getZoom();
+    // TODO Set default value if index not found
+    var currentLatLngInterval = defaultLatLngInterval[Math.round(map.getZoom())];
+    var ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return;
+    }
+    var leftTopLl = map.containerPointToLatLng({
+        x: 0,
+        y: 0,
+    });
+    var rightBottomLl = map.containerPointToLatLng({
+        x: canvas.width,
+        y: canvas.height,
+    });
+    var baseStartingLatitude = Math.floor(rightBottomLl.lat / currentLatLngInterval) * currentLatLngInterval;
+    var baseStartingLongitude = Math.floor(leftTopLl.lng / currentLatLngInterval) * currentLatLngInterval;
+    for (var i = baseStartingLatitude; i <= leftTopLl.lat; i += currentLatLngInterval) {
+        var westEnd = map.latLngToContainerPoint({
+            lat: i,
+            lng: leftTopLl.lng,
+        });
+        var eastEnd = map.latLngToContainerPoint({
+            lat: i,
+            lng: rightBottomLl.lng,
+        });
+        ctx.lineWidth = style.outLineWeight;
+        ctx.strokeStyle = style.outlineColour;
+        ctx.fillStyle = style.outlineColour;
+        ctx.beginPath();
+        ctx.moveTo(westEnd.x, westEnd.y);
+        ctx.lineTo(eastEnd.x, eastEnd.y);
+        ctx.stroke();
+        ctx.lineWidth = style.lineWeight;
+        ctx.strokeStyle = style.lineColour;
+        ctx.fillStyle = style.lineColour;
+        ctx.stroke();
+        // Draw the labels
+        var labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
+            .toFixed(3)
+            .toString()
+            .replace(/(\.0+|0+)$/, '');
+        var textWidth = ctx.measureText(labelText).width;
+        var textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
+        ctx.fillStyle = style.lineColour;
+        ctx.fillRect(westEnd.x + textWidth / 2 + 1, westEnd.y - textHeight, textWidth + 3, textHeight + 6);
+        ctx.fillStyle = style.outlineColour;
+        ctx.font = style.fontType;
+        ctx.fillText(labelText, westEnd.x + textWidth / 2 + 2, westEnd.y + 3);
+    }
+    for (var i = baseStartingLongitude; i <= rightBottomLl.lng; i += currentLatLngInterval) {
+        var northEnd = map.latLngToContainerPoint({
+            lat: leftTopLl.lat,
+            lng: i,
+        });
+        var southEnd = map.latLngToContainerPoint({
+            lat: rightBottomLl.lat,
+            lng: i,
+        });
+        ctx.lineWidth = style.outLineWeight;
+        ctx.strokeStyle = style.outlineColour;
+        ctx.fillStyle = style.outlineColour;
+        ctx.beginPath();
+        ctx.moveTo(northEnd.x, northEnd.y);
+        ctx.lineTo(southEnd.x, southEnd.y);
+        ctx.stroke();
+        ctx.lineWidth = style.lineWeight;
+        ctx.strokeStyle = style.lineColour;
+        ctx.fillStyle = style.lineColour;
+        ctx.stroke();
+        // Draw the labels
+        var labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
+            .toFixed(3)
+            .toString()
+            .replace(/(\.0+|0+)$/, '');
+        var textWidth = ctx.measureText(labelText).width;
+        var textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
+        ctx.fillStyle = style.lineColour;
+        ctx.fillRect(southEnd.x - textWidth / 2 - 1, southEnd.y - textHeight - 9, textWidth + 3, textHeight + 6);
+        ctx.fillStyle = style.outlineColour;
+        ctx.font = style.fontType;
+        ctx.fillText(labelText, southEnd.x - textWidth / 2, southEnd.y - 6);
+    }
 };
 //TODO - Add line props, zoom interval props
 var LatLngGraticule = function (props) {
     // Line/label properties
-    var dash = [2, 2];
-    var fontColour = '#aaa';
-    var fontBackground = '#fff';
-    var lineWeight = 1;
+    var fontColour = '#000';
+    var fontBackground = '#FFF';
+    var lineColor = '#000';
+    var lineOutlineColor = '#FFF';
+    var lineWeight = 2;
+    var lineOutlineWeight = 3;
     var showLabel = true;
     var canvas = document.createElement('canvas');
     canvas.classList.add('leaflet-zoom-animated');
@@ -54,7 +137,6 @@ var LatLngGraticule = function (props) {
     var _a = useState(props.checked), gridShown = _a[0], setGridVisbility = _a[1];
     // Add the canvas only if it hasn't already been added
     if (!map.getPanes().overlayPane.classList.contains(name)) {
-        console.log(map.getPanes().overlayPane.classList);
         map.getPanes().overlayPane.appendChild(canvas);
     }
     // Initial draw if required
@@ -69,7 +151,13 @@ var LatLngGraticule = function (props) {
         var ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawGraticule(map, canvas);
+            drawGraticule(map, canvas, {
+                lineWeight: lineWeight,
+                outLineWeight: lineOutlineWeight,
+                lineColour: lineColor,
+                outlineColour: lineOutlineColor,
+                fontType: '16px Courier New',
+            });
         }
     }
     function showGrid(e, map, canvas, name) {

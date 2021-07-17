@@ -1,7 +1,7 @@
 import { LayerGroup, LayersControl, MapContainer, TileLayer } from 'react-leaflet';
 import './App.css';
 
-import GarsGraticule from 'react-leaflet-lat-lng-graticule';
+import LatLngGraticule from 'react-leaflet-lat-lng-graticule';
 
 // Assigning the same name to the overlay as it's named in the control box
 // makes it much easier to toggle it on and off when multiple overlays
@@ -45,7 +45,7 @@ function App() {
         </LayersControl.BaseLayer>
         <LayersControl.Overlay checked={overlayEnabled} name={latLngGraticuleName}>
           <LayerGroup>
-            <GarsGraticule checked={overlayEnabled} name={latLngGraticuleName} />
+            <LatLngGraticule checked={overlayEnabled} name={latLngGraticuleName} />
           </LayerGroup>
         </LayersControl.Overlay>
       </LayersControl>
