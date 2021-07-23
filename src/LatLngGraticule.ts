@@ -29,13 +29,12 @@ interface Style {
   outLineWeight: number;
   lineColour: string;
   outlineColour: string;
+  fontColour: string;
+  fontBackground: string;
   fontType: string;
 }
 
 const drawGraticule = (map: Map, canvas: HTMLCanvasElement, style: Style) => {
-  // Determine lat/lng interval
-  // TODO Set default value if index not found
-
   const currentLatLngInterval = defaultLatLngInterval[Math.round(map.getZoom())];
 
   let ctx = canvas.getContext('2d');
@@ -86,21 +85,37 @@ const drawGraticule = (map: Map, canvas: HTMLCanvasElement, style: Style) => {
 
     // Draw the labels
 
-    const labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
-      .toFixed(3)
-      .toString()
-      .replace(/(\.0+|0+)$/, '');
-    const textWidth = ctx.measureText(labelText).width;
-    const textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
+    const latitude = (i / currentLatLngInterval) * currentLatLngInterval;
 
-    ctx.fillStyle = style.lineColour;
+    if (Math.abs(latitude) < 90) {
+      let labelText: string;
+      if (latitude === 0) {
+        labelText = '0';
+      } else if (latitude > 0) {
+        labelText =
+          latitude
+            .toFixed(3)
+            .toString()
+            .replace(/(\.0+|0+)$/, '') + 'N';
+      } else {
+        labelText =
+          Math.abs(latitude)
+            .toFixed(3)
+            .toString()
+            .replace(/(\.0+|0+)$/, '') + 'S';
+      }
 
-    ctx.fillRect(westEnd.x + textWidth / 2 + 1, westEnd.y - textHeight, textWidth + 3, textHeight + 6);
+      ctx.fillStyle = style.fontBackground;
+      ctx.font = style.fontType;
+      const textWidth = ctx.measureText(labelText).width;
+      const textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
 
-    ctx.fillStyle = style.outlineColour;
-    ctx.font = style.fontType;
+      ctx.fillRect(westEnd.x + 10, westEnd.y - textHeight, textWidth + 3, textHeight + 6);
 
-    ctx.fillText(labelText, westEnd.x + textWidth / 2 + 2, westEnd.y + 3);
+      ctx.fillStyle = style.fontColour;
+
+      ctx.fillText(labelText, westEnd.x + 11, westEnd.y + 3);
+    }
   }
 
   for (let i = baseStartingLongitude; i <= rightBottomLl.lng; i += currentLatLngInterval) {
@@ -129,39 +144,53 @@ const drawGraticule = (map: Map, canvas: HTMLCanvasElement, style: Style) => {
     ctx.stroke();
 
     // Draw the labels
+    const longitude = (i / currentLatLngInterval) * currentLatLngInterval;
+    let labelText: string;
+    if (longitude === 0) {
+      labelText = '0';
+    } else if (longitude > 0) {
+      labelText =
+        longitude
+          .toFixed(3)
+          .toString()
+          .replace(/(\.0+|0+)$/, '') + 'E';
+    } else {
+      labelText =
+        Math.abs(longitude)
+          .toFixed(3)
+          .toString()
+          .replace(/(\.0+|0+)$/, '') + 'W';
+    }
 
-    const labelText = ((i / currentLatLngInterval) * currentLatLngInterval)
-      .toFixed(3)
-      .toString()
-      .replace(/(\.0+|0+)$/, '');
     const textWidth = ctx.measureText(labelText).width;
     const textHeight = ctx.measureText(labelText).actualBoundingBoxAscent;
-
-    ctx.fillStyle = style.lineColour;
-
-    ctx.fillRect(southEnd.x - textWidth / 2 - 1, southEnd.y - textHeight - 9, textWidth + 3, textHeight + 6);
-
-    ctx.fillStyle = style.outlineColour;
     ctx.font = style.fontType;
+    ctx.fillStyle = style.fontBackground;
 
-    ctx.fillText(labelText, southEnd.x - textWidth / 2, southEnd.y - 6);
+    ctx.fillRect(southEnd.x - textWidth / 2 - 1, southEnd.y - 3 * textHeight - 3, textWidth + 3, textHeight + 6);
+
+    ctx.fillStyle = style.fontColour;
+
+    ctx.fillText(labelText, southEnd.x - textWidth / 2, southEnd.y - 2 * textHeight);
   }
 };
 
-//TODO - Add line props, zoom interval props
 const LatLngGraticule = (props: any) => {
   // Line/label properties
-  const fontColour = '#000';
-  const fontBackground = '#FFF';
-  const lineColor = '#000';
-  const lineOutlineColor = '#FFF';
-  const lineWeight = 2;
-  const lineOutlineWeight = 3;
-  const showLabel = true;
+  const fontColour = props.fontColour || '#FFF';
+  const fontBackground = props.fontBackground || '#000';
+  const lineColour = props.lineColour || '#000';
+  const lineOutlineColour = props.lineOutlineColour || '#FFF';
+  const lineWeight = props.lineWeight || 2;
+  const lineOutlineWeight = props.lineOutlineWeight || 3;
+  const fontType = props.fontType || '16px Courier New';
 
-  let canvas: HTMLCanvasElement = document.createElement('canvas');
+  let initCanvas: HTMLCanvasElement = document.createElement('canvas');
+
+  const [canvas, setCanvas] = useState(initCanvas);
   canvas.classList.add('leaflet-zoom-animated');
   canvas.classList.add(props.name);
+
   let name: string = props.name;
 
   let map = useMapEvents({
@@ -181,33 +210,35 @@ const LatLngGraticule = (props: any) => {
 
   const [gridShown, setGridVisbility] = useState(props.checked);
 
-  // Add the canvas only if it hasn't already been added
-  if (!map.getPanes().overlayPane.classList.contains(name)) {
-    map.getPanes().overlayPane.appendChild(canvas);
-  }
+  map.getPanes().overlayPane.appendChild(canvas);
+
   // Initial draw if required
   useEffect(() => {
     reset(map, canvas, gridShown);
   }, []);
 
   function reset(map: Map, canvas: HTMLCanvasElement, showGrid: boolean) {
-    const mapLeftTop: Point = map.containerPointToLayerPoint([0, 0]);
-    canvas.style['transform'] = `translate3d(${mapLeftTop.x}px,${mapLeftTop.y}px,0)`;
+    if (showGrid) {
+      const mapLeftTop: Point = map.containerPointToLayerPoint([0, 0]);
+      canvas.style['transform'] = `translate3d(${mapLeftTop.x}px,${mapLeftTop.y}px,0)`;
 
-    canvas.width = map.getSize().x;
-    canvas.height = map.getSize().y;
+      canvas.width = map.getSize().x;
+      canvas.height = map.getSize().y;
 
-    let ctx = canvas.getContext('2d');
+      let ctx = canvas.getContext('2d');
 
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGraticule(map, canvas, {
-        lineWeight: lineWeight,
-        outLineWeight: lineOutlineWeight,
-        lineColour: lineColor,
-        outlineColour: lineOutlineColor,
-        fontType: '16px Courier New',
-      });
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGraticule(map, canvas, {
+          lineWeight: lineWeight,
+          outLineWeight: lineOutlineWeight,
+          lineColour: lineColour,
+          outlineColour: lineOutlineColour,
+          fontColour: fontColour,
+          fontBackground: fontBackground,
+          fontType: fontType,
+        });
+      }
     }
   }
 
