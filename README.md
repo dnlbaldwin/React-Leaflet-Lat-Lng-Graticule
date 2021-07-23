@@ -1,6 +1,7 @@
 # React Leaflet Lat/Lng Graticule
 
 This graticule displays a latitude/longitude cells on a Leaflet map.
+
 See known issues [HERE](https://github.com/dnlbaldwin/React-Leaflet-Lat-Lng-Graticule/issues)
 
 See the live demo [HERE](https://dnlbaldwin.github.io/React-Leaflet-Lat-Lng-Graticule/)
